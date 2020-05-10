@@ -10,6 +10,7 @@ class AIPlayer:
         """
 
         self.color = color
+        self.op_color = "O" if color == "X" else "X"
 
     def get_move(self, board):
         """
@@ -25,15 +26,55 @@ class AIPlayer:
 
         # -----------------请实现你的算法代码--------------------------------------
 
-        # 用 list() 方法获取所有合法落子位置坐标列表
-        action_list = list(board.get_legal_actions(self.color))
-
-        # 如果 action_list 为空，则返回 None,否则从中选取一个随机元素，即合法的落子坐标
-        if len(action_list) == 0:
-            action = None
-        else:
-            action = action_list[0]
+        action, _ = self.max_min(board, 3)
         
         # ------------------------------------------------------------------------
 
         return action
+    
+    # 评估函数，得分越高对自己越有利
+    def evaluate(self, board):
+        return board.count(self.color)
+    
+    # 极大节点（自己）
+    def max_min(self, board, depth):
+        if depth == 0:
+            return None, self.evaluate(board)
+        else:
+            action_list = list(board.get_legal_actions(self.color))
+            if len(action_list) == 0:
+                return None, self.evaluate(board)
+            max_score = -10000 # 最大值
+            max_action = None
+            for action in action_list:
+                flipped_pos = board._move(action, self.color)
+                next_action, score = self.min_max(board, depth-1)
+                # 更新最大值
+                if score > max_score:
+                    max_score = score
+                    max_action = action
+                # 回溯
+                board.backpropagation(action, flipped_pos, self.color)
+            return max_action, max_score
+        
+    # 极小节点（对手）
+    def min_max(self, board, depth):
+        if depth == 0:
+            return None, self.evaluate(board)
+        else:
+            action_list = list(board.get_legal_actions(self.op_color))
+            if len(action_list) == 0:
+                return None, self.evaluate(board)
+            min_score = 10000 # 最小值
+            min_action = None
+            for action in action_list:
+                flipped_pos = board._move(action, self.op_color)
+                next_action, score = self.max_min(board, depth-1)
+                # 更新最小值
+                if score < min_score:
+                    min_score = score
+                    min_action = action
+                # 回溯
+                board.backpropagation(action, flipped_pos, self.op_color)
+            return min_action, min_score
+        
