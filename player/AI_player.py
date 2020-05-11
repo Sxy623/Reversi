@@ -203,7 +203,7 @@ class AIPlayer:
             max_ucb = float('-inf')
             # 遍历子节点
             for action, child_node in node.childs.items():
-                ucb = self.cal_ucb(child_node, count)
+                ucb = self.cal_ucb(child_node, count, node.color)
                 # 找到了更大的 UCB
                 if ucb > max_ucb:
                     max_ucb = ucb
@@ -255,31 +255,36 @@ class AIPlayer:
                 return result
     
     # 计算 UCB
-    def cal_ucb(self, node, count):
+    def cal_ucb(self, node, count, color):
         # 从未被访问过的节点
         if node.n == 0:
             return float('inf')
         else:
-            return node.t / node.n + self.c * math.sqrt(math.log(count) / node.n)
+            if color == self.color:
+                return node.t / node.n + self.c * math.sqrt(math.log(count) / node.n)
+            else:
+                return 1 - node.t / node.n + self.c * math.sqrt(math.log(count) / node.n)
         
     # 从当前节点随机进行到游戏结束
     def rollout(self, board, node):
         # 对手颜色
         op_color = 'O' if node.color == 'X' else 'X'
-        action_list1 = list(board.get_legal_actions(node.color))
-        action_list2 = list(board.get_legal_actions(op_color))
         # 只要还有一方能落子，就继续进行
-        while len(action_list1) != 0 or len(action_list2) != 0:
+        while True:
+            player1_move = False
+            player2_move = False
+            action_list1 = list(board.get_legal_actions(node.color))
             if len(action_list1) != 0:
                 action1 = random.choice(action_list1)
                 board._move(action1, node.color)
-                action_list1 = list(board.get_legal_actions(node.color))
-                action_list2 = list(board.get_legal_actions(op_color))
+                player1_move = True
+            action_list2 = list(board.get_legal_actions(op_color))
             if len(action_list2) != 0:
                 action2 = random.choice(action_list2)
                 board._move(action2, op_color)
-                action_list1 = list(board.get_legal_actions(node.color))
-                action_list2 = list(board.get_legal_actions(op_color))
+                player2_move = True
+            if player1_move == False and player2_move == False:
+                break
         # 判断胜者
         winner, _ = board.get_winner()
         if winner == 0 and self.color == 'X':
